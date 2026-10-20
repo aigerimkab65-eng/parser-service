@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Проверка страницы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/app.css?v=8" />
+  </head>
+  <body>
+    <main class="page">
+      <p class="eyebrow">parsing_url</p>
+      <h1 class="title">Проверка страницы</h1>
+      <p class="lead">Вставь ссылку на сайт — получишь текст и картинки.</p>
+
+      <form class="form" id="form" autocomplete="off">
+        <label class="label" for="url">Ссылка</label>
+        <input
+          id="url"
+          class="input"
+          type="text"
+          inputmode="url"
+          name="url"
+          placeholder="https://www.aigerimkabaeva.com/"
+          required
+          spellcheck="false"
+          autocomplete="url"
+        />
+        <button type="submit" class="btn" id="submit">Получить текст</button>
+        <p class="hint">Обычно хватает нескольких секунд. Иногда до полминуты.</p>
+      </form>
+
+      <section class="status" id="status" hidden></section>
+
+      <section class="result" id="result" hidden>
+        <h2 class="result-title" id="pageTitle"></h2>
+        <p class="result-url" id="pageUrl"></p>
+        <p class="result-meta" id="pageMeta"></p>
+
+        <h3 class="block-label">Текст</h3>
+        <div class="text-box" id="pageText"></div>
+
+        <h3 class="block-label" id="imagesLabel" hidden>Картинки</h3>
+        <div class="gallery" id="gallery" hidden></div>
+      </section>
+    </main>
+    <script src="/static/app.js?v=8"></script>
+  </body>
+</html>

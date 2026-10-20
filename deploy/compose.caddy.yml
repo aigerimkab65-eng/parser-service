@@ -1,0 +1,33 @@
+# Необязательная добавка: HTTPS через Caddy для поддомена.
+# Запуск вместе с compose.yml:
+#   DOMAIN=parser.example.com EMAIL=you@example.com \
+#   docker compose -f deploy/compose.yml -f deploy/compose.caddy.yml up -d
+
+services:
+  caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    depends_on:
+      parser:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Задайте DOMAIN}
+      EMAIL: ${EMAIL:-}
+    volumes:
+      - ../docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - parser_net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  caddy_data:
+  caddy_config:

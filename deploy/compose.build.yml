@@ -1,0 +1,91 @@
+# Сборка образа ИЗ ИСХОДНИКОВ (для разработки).
+# Запуск из корня репозитория:
+#   docker compose -f deploy/compose.build.yml up --build -d
+#
+# Для обычного использования берите готовый образ из ghcr (см. compose.yml).
+
+services:
+  parser:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        VARIANT: ${PARSER_BUILD_VARIANT:-lite}
+        VERSION: ${APP_VERSION:-1.0.0}
+        GIT_COMMIT: ${GIT_COMMIT:-local}
+    image: parser-service:${PARSER_BUILD_VARIANT:-lite}
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      PARSER_VARIANT: ${PARSER_BUILD_VARIANT:-lite}
+      BROWSER_ENABLED: ${BROWSER_ENABLED:-false}
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      GIT_COMMIT: ${GIT_COMMIT:-local}
+    expose:
+      - "8000"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    shm_size: "256mb"
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: ${PARSER_MEM_LIMIT:-512m}
+    cpus: ${PARSER_CPUS:-1.0}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - parser_net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    depends_on:
+      parser:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      EMAIL: ${EMAIL:-}
+    volumes:
+      - ../docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - parser_net
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  parser_net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

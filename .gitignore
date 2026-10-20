@@ -1,0 +1,33 @@
+# Окружение и секреты
+.env
+.env.*
+!.env.example
+
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.log
+.DS_Store
+.idea/
+.vscode/
+
+# Локальные артефакты Docker / Caddy
+caddy_data/
+caddy_config/
+
+# Локальные отчёты сканеров
+gitleaks-report.json
+.trivy/
+*.sarif
+
+# Локальные заметки (не в публичный репозиторий)
+text.md

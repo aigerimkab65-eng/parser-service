@@ -1,0 +1,593 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "parser-service",
+    "description": "HTTP-сервис парсинга веб-страниц по ссылке.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/version": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Version",
+        "operationId": "version_version_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/parse": {
+      "post": {
+        "tags": [
+          "parse"
+        ],
+        "summary": "Parse Url",
+        "operationId": "parse_url_v1_parse_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParseResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/parse/batch": {
+      "post": {
+        "tags": [
+          "parse"
+        ],
+        "summary": "Parse Batch",
+        "description": "До 10 ссылок за раз (этап 2).",
+        "operationId": "parse_batch_v1_parse_batch_post",
+        "parameters": [
+          {
+            "name": "X-API-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParseBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParseBatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BatchItemResult": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ParseResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok"
+        ],
+        "title": "BatchItemResult"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "ok"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "browser_enabled": {
+            "type": "boolean",
+            "title": "Browser Enabled",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "title": "HealthResponse"
+      },
+      "LinkItem": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "url"
+        ],
+        "title": "LinkItem"
+      },
+      "ParseBatchRequest": {
+        "properties": {
+          "urls": {
+            "items": {
+              "type": "string",
+              "maxLength": 2083,
+              "minLength": 1,
+              "format": "uri"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "minItems": 1,
+            "title": "Urls"
+          },
+          "render": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "never",
+              "always"
+            ],
+            "title": "Render",
+            "default": "auto"
+          },
+          "include_images": {
+            "type": "boolean",
+            "title": "Include Images",
+            "default": true
+          },
+          "include_links": {
+            "type": "boolean",
+            "title": "Include Links",
+            "default": false
+          },
+          "use_cache": {
+            "type": "boolean",
+            "title": "Use Cache",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "urls"
+        ],
+        "title": "ParseBatchRequest"
+      },
+      "ParseBatchResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/BatchItemResult"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "title": "ParseBatchResponse"
+      },
+      "ParseRequest": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2083,
+            "minLength": 1,
+            "format": "uri",
+            "title": "Url"
+          },
+          "render": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "never",
+              "always"
+            ],
+            "title": "Render",
+            "default": "auto"
+          },
+          "include_images": {
+            "type": "boolean",
+            "title": "Include Images",
+            "default": true
+          },
+          "include_links": {
+            "type": "boolean",
+            "title": "Include Links",
+            "default": false
+          },
+          "use_cache": {
+            "type": "boolean",
+            "title": "Use Cache",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ParseRequest"
+      },
+      "ParseResponse": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "final_url": {
+            "type": "string",
+            "title": "Final Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author"
+          },
+          "published_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published Date"
+          },
+          "site_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Name"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "main_image": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Image"
+          },
+          "images": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Images"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/LinkItem"
+            },
+            "type": "array",
+            "title": "Links"
+          },
+          "content_markdown": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Markdown"
+          },
+          "content_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Text"
+          },
+          "word_count": {
+            "type": "integer",
+            "title": "Word Count",
+            "default": 0
+          },
+          "render_used": {
+            "type": "string",
+            "enum": [
+              "static",
+              "browser"
+            ],
+            "title": "Render Used",
+            "default": "static"
+          },
+          "from_cache": {
+            "type": "boolean",
+            "title": "From Cache",
+            "default": false
+          },
+          "fetched_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fetched At"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "url",
+          "final_url",
+          "fetched_at"
+        ],
+        "title": "ParseResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VersionResponse": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "commit": {
+            "type": "string",
+            "title": "Commit"
+          },
+          "variant": {
+            "type": "string",
+            "title": "Variant"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "commit",
+          "variant"
+        ],
+        "title": "VersionResponse"
+      }
+    }
+  }
+}

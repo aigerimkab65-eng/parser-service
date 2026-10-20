@@ -1,0 +1,23 @@
+# HTTPS через Let's Encrypt. Сервис parser наружу не публикуется.
+
+{$DOMAIN:parser.aigerimkabaeva.com} {
+	encode gzip
+
+	reverse_proxy parser:8000
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		Cross-Origin-Opener-Policy same-origin
+		Cross-Origin-Resource-Policy same-origin
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		-Server
+		-X-Powered-By
+	}
+
+	log {
+		output stdout
+	}
+}

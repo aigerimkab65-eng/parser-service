@@ -1,0 +1,36 @@
+# Фрагмент для чужого docker-compose: сервис parser в общей сети.
+# Подставьте свой сильный API_KEYS и актуальный тег образа (без latest).
+
+services:
+  parser:
+    image: ghcr.io/aigerimkab65-eng/parser-service:1.0-lite
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      API_KEYS: ${API_KEYS:?}
+      PARSER_VARIANT: lite
+      BROWSER_ENABLED: "false"
+      UI_ENABLED: "false"
+      DOCS_ENABLED: "false"
+    expose:
+      - "8000"
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=256m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - app_net
+
+  # ваш_сервис:
+  #   ...
+  #   environment:
+  #     PARSER_URL: http://parser:8000
+  #   networks:
+  #     - app_net
+
+networks:
+  app_net:
+    driver: bridge

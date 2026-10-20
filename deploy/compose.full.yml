@@ -1,0 +1,62 @@
+# Вариант full (Playwright) с read_only + tmpfs + cap_drop: ALL.
+# Нужен больший shm и память.
+#
+#   BROWSER_ENABLED=true API_KEYS="$(openssl rand -hex 32)" \
+#   docker compose -f deploy/compose.full.yml up --build -d
+
+services:
+  parser:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      args:
+        VARIANT: full
+        VERSION: ${APP_VERSION:-1.0.0}
+        GIT_COMMIT: ${GIT_COMMIT:-local}
+    image: parser-service:full
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      API_KEYS: ${API_KEYS:-dev-key-change-me}
+      PARSER_VARIANT: full
+      BROWSER_ENABLED: "true"
+      UI_ENABLED: ${UI_ENABLED:-true}
+      DOCS_ENABLED: "false"
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+      GIT_COMMIT: ${GIT_COMMIT:-local}
+      # Playwright: профили/кэш только в /tmp при read_only
+      TMPDIR: /tmp
+      HOME: /tmp
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    ports:
+      - "127.0.0.1:8000:8000"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    shm_size: "512mb"
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=512m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1536m
+    cpus: "2.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 60s

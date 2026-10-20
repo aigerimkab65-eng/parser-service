@@ -1,0 +1,15 @@
+# Конфиг gitleaks (MIT): https://github.com/gitleaks/gitleaks
+title = "parser-service"
+
+[allowlist]
+description = "Учебные/документационные плейсхолдеры, не боевые секреты"
+paths = [
+  '''\.gitleaks\.toml$''',
+  '''THIRD_PARTY_LICENSES\.md$''',
+]
+regexTarget = "match"
+regexes = [
+  # Явно упоминаем запрещённый дефолт в документации и проверках
+  '''dev-key-change-me''',
+  '''test-key''',
+]
