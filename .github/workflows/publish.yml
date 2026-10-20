@@ -1,5 +1,9 @@
 # Сборка и публикация образов в ghcr.io (lite + full).
-# Теги: {version}-lite / {version}-full и sha-... (без latest).
+# Теги (без latest), через docker/metadata-action:
+#   {major}.{minor}.{patch}-VARIANT
+#   {major}.{minor}-VARIANT
+#   VARIANT
+#   sha-<full>-VARIANT
 # Запуск вручную или по git-тегу v*.
 #
 # Actions закреплены полным SHA; рядом — тег версии и SPDX-лицензия.
@@ -48,13 +52,32 @@ jobs:
         id: ver
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+            VERSION="${{ inputs.version }}"
           else
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            VERSION="${GITHUB_REF_NAME#v}"
           fi
-          echo "commit=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
-          owner=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "owner=${owner}" >> "$GITHUB_OUTPUT"
+          # major.minor из X.Y.Z
+          MAJOR_MINOR=$(echo "$VERSION" | awk -F. '{print $1"."$2}')
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          {
+            echo "version=${VERSION}"
+            echo "major_minor=${MAJOR_MINOR}"
+            echo "commit=${GITHUB_SHA}"
+            echo "owner=${OWNER}"
+          } >> "$GITHUB_OUTPUT"
+
+      # docker/metadata-action@v5.10.0 — license: Apache-2.0
+      - uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
+        id: meta
+        with:
+          images: ghcr.io/${{ steps.ver.outputs.owner }}/parser-service
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=${{ steps.ver.outputs.version }},suffix=-${{ matrix.variant }}
+            type=raw,value=${{ steps.ver.outputs.major_minor }},suffix=-${{ matrix.variant }}
+            type=raw,value=${{ matrix.variant }}
+            type=sha,prefix=sha-,suffix=-${{ matrix.variant }},format=long
 
       # docker/build-push-action@v7.4.0 — license: Apache-2.0
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
@@ -62,17 +85,12 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/${{ steps.ver.outputs.owner }}/parser-service:${{ steps.ver.outputs.version }}-${{ matrix.variant }}
-            ghcr.io/${{ steps.ver.outputs.owner }}/parser-service:sha-${{ github.sha }}-${{ matrix.variant }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VARIANT=${{ matrix.variant }}
             VERSION=${{ steps.ver.outputs.version }}
             GIT_COMMIT=${{ steps.ver.outputs.commit }}
-          labels: |
-            org.opencontainers.image.version=${{ steps.ver.outputs.version }}
-            org.opencontainers.image.revision=${{ steps.ver.outputs.commit }}
-            org.opencontainers.image.source=https://github.com/${{ github.repository }}
 
       # aquasecurity/trivy-action@v0.36.0 — license: Apache-2.0
       - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
