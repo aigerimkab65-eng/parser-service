@@ -1,0 +1,52 @@
+# Одноразово: сделать ghcr-пакет публичным и привязать к репозиторию.
+name: make-package-public
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  public:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set package visibility to public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          OWNER="${{ github.repository_owner }}"
+          OWNER_LC=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+          NAME=parser-service
+          REPO_ID=$(gh api "repos/${{ github.repository }}" --jq .id)
+          echo "owner=$OWNER repo_id=$REPO_ID"
+
+          # Привязка к репозиторию (если ещё не привязан)
+          gh api --method PUT \
+            "/user/packages/container/${NAME}/package" \
+            -f repository_id="$REPO_ID" \
+            || gh api --method PUT \
+            "/users/${OWNER}/packages/container/${NAME}/package" \
+            -f repository_id="$REPO_ID" \
+            || echo "connect skipped"
+
+          # Публичная видимость
+          code=0
+          gh api --method PUT \
+            "/user/packages/container/${NAME}/visibility" \
+            -f visibility=public || code=$?
+          if [ "$code" != 0 ]; then
+            gh api --method PUT \
+              "/users/${OWNER}/packages/container/${NAME}/visibility" \
+              -f visibility=public || code=$?
+          fi
+
+          # Проверка
+          gh api "user/packages/container/${NAME}" --jq '{name,visibility,html_url}' \
+            || gh api "users/${OWNER}/packages/container/${NAME}" --jq '{name,visibility,html_url}'
+
+          # Анонимный pull-токен (должен работать для public)
+          curl -sS -o /dev/null -w "anon_manifest_http=%{http_code}\n" \
+            "https://ghcr.io/v2/${OWNER_LC}/${NAME}/manifests/1.0-lite" || true
